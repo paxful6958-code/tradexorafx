@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRADEXORA Trading - Markets & News</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts: Inter -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            red: '#8b1d38',
+                            brightRed: '#e53e3e',
+                            softRed: '#fff5f5',
+                            darkNav: '#0f172a',
+                            blueAccent: '#2563eb',
+                            greenBuy: '#16a34a'
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #ffffff;
+            color: #1e293b;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+         ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+         ::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        
+         ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        /* Hide scrollbar for tab navigation on mobile */
+        
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        @keyframes flashUp {
+            0% {
+                background-color: rgba(22, 163, 74, 0.08);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+        
+        @keyframes flashDown {
+            0% {
+                background-color: rgba(229, 62, 62, 0.08);
+            }
+            100% {
+                background-color: transparent;
+            }
+        }
+        
+        .flash-up {
+            animation: flashUp 0.6s ease-out;
+        }
+        
+        .flash-down {
+            animation: flashDown 0.6s ease-out;
+        }
+    </style>
+</head>
+
+<body class="bg-white min-h-screen flex flex-col justify-between pb-28 select-none">
+
+    <!-- TOP HEADER -->
+    <header class="w-full bg-white border-b border-gray-100 px-4 py-3 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+
+            <!-- Left Header: Back Button, Logo & Deposit Funds -->
+            <div class="flex items-center space-x-3">
+
+                <!-- Back Button pointing to Menu -->
+                <a href="../menu/index.html" class="flex items-center space-x-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Back</span>
+                </a>
+
+                <!-- TRADEXORA Logo -->
+                <a href="../TradesChart/index.html" aria-label="TRADEXORA home" class="flex items-center shrink-0">
+                    <div class="min-h-9 px-3 rounded-lg bg-black text-amber-400 flex items-center justify-center border border-amber-500/30 shadow-sm">
+                        <span class="text-[11px] sm:text-xs font-extrabold tracking-[0.12em] whitespace-nowrap">
+                            TRADEXORA
+                        </span>
+                    </div>
+                </a>
+
+                <!-- Deposit Funds Button -->
+                <a href="../deposit/index.html" class="flex items-center space-x-2 bg-amber-50/70 hover:bg-amber-100/80 border border-amber-200/80 text-amber-900 text-xs font-medium px-3 py-2 rounded-xl transition-colors">
+                    <i class="fa-regular fa-credit-card text-amber-700 text-xs"></i>
+                    <span>Deposit Funds</span>
+                </a>
+            </div>
+
+            <!-- Right Header: Account Status & Quick Actions -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
+
+                <!-- Account Dropdown Trigger -->
+                <div class="relative">
+                    <button id="accountDropdownBtn" onclick="toggleAccountDropdown()" class="bg-[#8b1d38] hover:bg-[#72172d] text-white text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-2 transition-colors shadow-sm">
+                        <i class="fa-solid fa-chevron-down text-[10px] opacity-80"></i>
+                        <div class="text-right">
+                            <div class="text-[11px] font-bold leading-tight" id="activeAccountType">Demo $10,000.00</div>
+                            <div class="text-[9px] font-normal tracking-wider opacity-80" id="activeAccountId">DNP142887</div>
+                        </div>
+                    </button>
+
+                    <!-- Account Dropdown -->
+                    <div id="accountDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-50">
+                        <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-2">
+                            Select Account
+                        </div>
+
+                        <button onclick="selectAccount('Demo')" class="w-full text-left p-2.5 rounded-lg hover:bg-gray-50 flex items-center justify-between border border-transparent hover:border-gray-200 transition-all mb-1">
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Demo Account</div>
+                                <div class="text-[11px] text-gray-500">ID: DNP142887</div>
+                            </div>
+                            <div class="text-xs font-bold text-emerald-600" id="dropdownDemoBalance">$10,000.00</div>
+                        </button>
+
+                        <button onclick="selectAccount('Real')" class="w-full text-left p-2.5 rounded-lg hover:bg-gray-50 flex items-center justify-between border border-transparent hover:border-gray-200 transition-all">
+                            <div>
+                                <div class="text-xs font-bold text-gray-800">Real Account</div>
+                                <div class="text-[11px] text-gray-500">ID: LIV982104</div>
+                            </div>
+                            <div class="text-xs font-bold text-gray-700" id="dropdownLiveBalance">$0.00</div>
+                        </button>
+                    </div>
+                </div>
+
+                <button onclick="location.reload()" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors" title="Refresh">
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+
+                <a href="../More/index.html" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors" title="Settings">
+                    <i class="fa-solid fa-gear text-xs"></i>
+                </a>
+
+                <a href="../More/index.html" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition-colors" title="Profile">
+                    <i class="fa-regular fa-user text-xs"></i>
+                </a>
+
+                <button onclick="handleLogout()" class="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors" title="Logout">
+                    <i class="fa-solid fa-right-from-bracket text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN MARKETS & NEWS CONTENT -->
+    <main class="max-w-6xl mx-auto px-4 sm:px-6 pt-4 pb-12 w-full space-y-6">
+
+        <!-- PAGE TITLE -->
+        <div>
+            <div class="text-[10px] font-bold tracking-widest text-gray-400 uppercase">MARKETS &amp; NEWS</div>
+            <h1 id="pageTitleName" class="text-2xl font-extrabold text-gray-900 tracking-tight">Welcome</h1>
+        </div>
+
+        <!-- QUICK LINKS ROW -->
+        <div class="flex items-center justify-center space-x-12 sm:space-x-24 mb-6 border-b border-gray-100 pb-6">
+            <a href="../TradesChart/index.html" class="group flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-red-50 text-[#e53e3e] flex items-center justify-center mb-1.5 group-hover:bg-red-100 transition-colors">
+                    <i class="fa-solid fa-house text-sm"></i>
+                </div>
+                <span class="text-xs font-medium text-gray-700 group-hover:text-red-600 transition-colors">Back to Trading</span>
+            </a>
+
+            <a href="../menu/index.html" class="group flex flex-col items-center">
+                <div class="w-10 h-10 rounded-full bg-red-50 text-[#e53e3e] flex items-center justify-center mb-1.5 group-hover:bg-red-100 transition-colors">
+                    <i class="fa-regular fa-credit-card text-sm"></i>
+                </div>
+                <span class="text-xs font-medium text-gray-700 group-hover:text-red-600 transition-colors">Wallet</span>
+            </a>
+        </div>
+
+        <!-- INSTRUMENTS SEARCH & CATEGORY BOX -->
+        <div class="border border-gray-200/80 rounded-2xl p-4 bg-white space-y-3">
+
+            <!-- CATEGORY TABS -->
+            <div class="flex items-center space-x-6 overflow-x-auto no-scrollbar border-b border-gray-100 pb-2 text-xs font-medium text-gray-400">
+                <button onclick="switchCategory('forex', this)" data-cat="forex" class="category-tab text-[#e53e3e] font-bold border-b-2 border-[#e53e3e] pb-2 whitespace-nowrap">Forex</button>
+                <button onclick="switchCategory('crypto', this)" data-cat="crypto" class="category-tab hover:text-gray-800 pb-2 whitespace-nowrap">Crypto</button>
+                <button onclick="switchCategory('metals', this)" data-cat="metals" class="category-tab hover:text-gray-800 pb-2 whitespace-nowrap">Metals</button>
+                <button onclick="switchCategory('commodities', this)" data-cat="commodities" class="category-tab hover:text-gray-800 pb-2 whitespace-nowrap">Commodities</button>
+                <button onclick="switchCategory('indices', this)" data-cat="indices" class="category-tab hover:text-gray-800 pb-2 whitespace-nowrap">Indices</button>
+                <button onclick="switchCategory('stocks', this)" data-cat="stocks" class="category-tab hover:text-gray-800 pb-2 whitespace-nowrap">Stocks</button>
+            </div>
+
+            <!-- SEARCH INPUT -->
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="searchInput" oninput="filterInstruments()" placeholder="Search instruments" class="w-full pl-9 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:outline-none focus:border-gray-400 transition-all">
+            </div>
+        </div>
+
+        <!-- INSTRUMENT CARDS GRID -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="instrumentsGrid">
+            <!-- Populated dynamically from the shared symbols database -->
+        </div>
+
+        <!-- TOP MOVER BANNER -->
+        <div class="bg-gray-50/70 border border-gray-100 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+                <div class="text-[9px] font-extrabold text-gray-400 tracking-wider uppercase mb-1">TOP MOVER</div>
+                <div class="text-xs font-extrabold text-gray-900" id="topMoverSymbol">—</div>
+                <div class="text-[10px] text-gray-400 font-medium" id="topMoverName">—</div>
+                <div class="text-[10px] text-gray-400 font-medium mt-1">Spread</div>
+                <div class="text-[10px] text-gray-400 font-normal" id="topMoverNote">One-click orders use the active account with lot 0.10.</div>
+            </div>
+
+            <div class="text-left sm:text-right">
+                <div class="text-[10px] text-emerald-600 font-extrabold">Live prices active</div>
+                <div class="text-xs font-extrabold text-gray-900 mt-4" id="topMoverPrice">0.00000</div>
+                <div class="text-[10px] font-bold text-emerald-600" id="topMoverChange">+0.00%</div>
+            </div>
+        </div>
+
+        <!-- MARKET NEWS SECTION -->
+        <div class="space-y-3 pt-2">
+            <div class="text-xs font-bold text-gray-900 flex items-center space-x-2">
+                <i class="fa-regular fa-newspaper text-red-500 text-xs"></i>
+                <span>Market news</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                <!-- NEWS CARD 1 -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 space-y-2 shadow-xs">
+                    <div class="flex items-start justify-between">
+                        <h3 class="text-xs font-extrabold text-gray-900 leading-snug">Dollar steadies before Fed remarks</h3>
+                        <span class="text-[9px] font-extrabold bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Medium</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-medium">Market Wire · 08:30</div>
+                    <p class="text-[11px] text-gray-600 leading-relaxed">
+                        FX pairs remain tight as traders wait for central-bank guidance and inflation commentary.
+                    </p>
+                </div>
+
+                <!-- NEWS CARD 2 -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 space-y-2 shadow-xs">
+                    <div class="flex items-start justify-between">
+                        <h3 class="text-xs font-extrabold text-gray-900 leading-snug">Gold holds bid on softer yields</h3>
+                        <span class="text-[9px] font-extrabold bg-gray-100 text-gray-500 px-2 py-0.5 rounded">High</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-medium">Commodities Desk · 09:10</div>
+                    <p class="text-[11px] text-gray-600 leading-relaxed">
+                        Precious metals stay supported as rates cool and safe-haven demand improves.
+                    </p>
+                </div>
+
+                <!-- NEWS CARD 3 -->
+                <div class="bg-white border border-gray-100 rounded-2xl p-4 space-y-2 shadow-xs relative">
+                    <div class="flex items-start justify-between">
+                        <h3 class="text-xs font-extrabold text-gray-900 leading-snug">Crypto majors trade mixed into New York open</h3>
+                        <span class="text-[9px] font-extrabold bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Medium</span>
+                    </div>
+                    <div class="text-[10px] text-gray-400 font-medium">Crypto Pulse · 10:05</div>
+                    <p class="text-[11px] text-gray-600 leading-relaxed pb-4">
+                        Bitcoin remains resilient while altcoin rotation stays selective ahead of ETF flow data.
+                    </p>
+
+                    <!-- QORA AI BUTTON -->
+                    <button onclick="showToast('Loading Qora AI Market Insights...')" class="absolute bottom-3 right-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3.5 py-2 rounded-xl flex items-center space-x-1.5 shadow-md hover:shadow-lg transition-all">
+                        <i class="fa-solid fa-cube text-xs"></i>
+                        <span>Qora AI</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ECONOMIC CALENDAR SECTION -->
+        <div class="space-y-3 pt-2">
+            <div class="text-xs font-bold text-gray-900 flex items-center space-x-2">
+                <i class="fa-regular fa-calendar text-red-500 text-xs"></i>
+                <span>Economic calendar</span>
+            </div>
+
+            <div class="space-y-2">
+                <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-gray-900">US CPI m/m</div>
+                        <div class="text-[10px] text-gray-400 font-medium">12:30 · US · High</div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-gray-900">Fed Chair Speech</div>
+                        <div class="text-[10px] text-gray-400 font-medium">14:00 · US · High</div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3 flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-bold text-gray-900">Crude Oil Inventories</div>
+                        <div class="text-[10px] text-gray-400 font-medium">15:30 · US · Medium</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI SIGNALS SECTION -->
+        <div class="space-y-3 pt-2">
+            <div class="text-xs font-bold text-gray-900 flex items-center space-x-2">
+                <i class="fa-solid fa-bolt text-red-500 text-xs"></i>
+                <span>AI signals</span>
+            </div>
+
+            <div class="space-y-2">
+                <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3 space-y-1">
+                    <div class="text-xs font-extrabold text-gray-900">EURUSD · Buy Bias</div>
+                    <div class="text-[10px] text-gray-400 font-medium">Confidence 72%</div>
+                    <p class="text-[11px] text-gray-600">Higher lows remain intact above intraday VWAP.</p>
+                </div>
+
+                <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3 space-y-1">
+                    <div class="text-xs font-extrabold text-gray-900">XAUUSD · Momentum Long</div>
+                    <div class="text-[10px] text-gray-400 font-medium">Confidence 68%</div>
+                    <p class="text-[11px] text-gray-600">Breakout continuation remains valid above recent support.</p>
+                </div>
+
+                <div class="bg-gray-50/70 border border-gray-100 rounded-xl p-3 space-y-1">
+                    <div class="text-xs font-extrabold text-gray-900">BTCUSD · Neutral</div>
+                    <div class="text-[10px] text-gray-400 font-medium">Confidence 54%</div>
+                    <p class="text-[11px] text-gray-600">Range conditions persist until key resistance breaks decisively.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- BOTTOM NAVIGATION DOCK -->
+    <nav class="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-xl bg-white/95 backdrop-blur-md border border-gray-200/80 rounded-full shadow-lg px-3 py-2 z-40">
+        <div class="flex items-center justify-between">
+
+            <a href="../menu/index.html" class="flex flex-col items-center flex-1 py-1 text-gray-500 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-bars text-sm mb-1"></i>
+                <span class="text-[10px] font-medium">Menu</span>
+            </a>
+
+            <a href="../Trades/index.html" class="flex flex-col items-center flex-1 py-1 text-gray-500 hover:text-gray-900 transition-colors relative">
+                <span class="absolute -top-3 text-[9px] font-extrabold text-[#0284c7] tracking-tight" id="tradesProfitBadge">+$0.00</span>
+                <i class="fa-regular fa-folder text-sm mb-1"></i>
+                <span class="text-[10px] font-medium">Trades</span>
+            </a>
+
+            <a href="../TradesChart/index.html" class="flex flex-col items-center flex-1 py-1 text-gray-500 hover:text-gray-900 transition-colors">
+                <i class="fa-solid fa-house text-sm mb-1"></i>
+                <span class="text-[10px] font-medium">Trade chart</span>
+            </a>
+
+            <a href="index.html" class="flex flex-col items-center flex-1 py-1 text-red-600">
+                <i class="fa-regular fa-newspaper text-sm mb-1"></i>
+                <span class="text-[10px] font-bold">Markets &amp; News</span>
+            </a>
+
+            <a href="../More/index.html" class="flex flex-col items-center flex-1 py-1 text-gray-500 hover:text-gray-900 transition-colors">
+                <i class="fa-regular fa-user text-sm mb-1"></i>
+                <span class="text-[10px] font-medium">More</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast" class="fixed top-16 right-4 bg-gray-900 text-white px-4 py-3 rounded-xl shadow-xl text-xs font-medium translate-y-[-100px] opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
+        <i class="fa-solid fa-circle-info text-amber-400" id="toastIcon"></i>
+        <span id="toastMsg">Action triggered</span>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        'use strict';
+
+        const CURRENT_USER_KEY = 'currentUser';
+        const TX_ACCOUNT_KEY = 'tradexora_account';
+        const TX_TRADES_KEY = 'tradexora_trades';
+        const INDEX_URL = '../index.html';
+
+        const TWELVE_DATA_API_KEY = '8880b08dbf864dbd827eda51788d3703';
+        const TD_POLL_MS = 8000;
+        const SIM_TICK_MS = 1000;
+        const SPREAD_PCT = 0.0002;
+        const TX_LEVERAGE = 100;
+
+        // Shared TX contract sizes (must match the TradesChart page TX layer)
+        const TX_CONTRACT_SIZES = {
+            USOIL: 1000,
+            NATGAS: 10000,
+            EURUSD: 100000,
+            GBPUSD: 100000,
+            USDJPY: 100000,
+            AAPL: 1,
+            NVDA: 1,
+            BTCUSD: 1,
+            ETHUSD: 1,
+            XAUUSD: 100,
+            XAGUSD: 5000,
+            US30: 1,
+            NAS100: 1
+        };
+
+        // Symbols database (mirrors the TradesChart page symbolsDatabase)
+        const symbolsDatabase = {
+            'EURUSD': {
+                tdSymbol: 'EUR/USD',
+                category: 'forex',
+                name: 'EUR/USD',
+                base: 1.0845,
+                pipSize: 0.0001
+            },
+            'GBPUSD': {
+                tdSymbol: 'GBP/USD',
+                category: 'forex',
+                name: 'GBP/USD',
+                base: 1.2910,
+                pipSize: 0.0001
+            },
+            'USDJPY': {
+                tdSymbol: 'USD/JPY',
+                category: 'forex',
+                name: 'USD/JPY',
+                base: 154.20,
+                pipSize: 0.01
+            },
+            'BTCUSD': {
+                tdSymbol: 'BTC/USD',
+                category: 'crypto',
+                name: 'Bitcoin',
+                base: 77868.26,
+                pipSize: 0.01
+            },
+            'ETHUSD': {
+                tdSymbol: 'ETH/USD',
+                category: 'crypto',
+                name: 'Ethereum',
+                base: 2640,
+                pipSize: 0.01
+            },
+            'XAUUSD': {
+                tdSymbol: 'XAU/USD',
+                category: 'metals',
+                name: 'Gold',
+                base: 2735.80,
+                pipSize: 0.01
+            },
+            'XAGUSD': {
+                tdSymbol: 'XAG/USD',
+                category: 'metals',
+                name: 'Silver',
+                base: 33.70,
+                pipSize: 0.001
+            },
+            'USOIL': {
+                tdSymbol: 'WTI/USD',
+                category: 'commodities',
+                name: 'Crude Oil',
+                base: 77.46,
+                pipSize: 0.01
+            },
+            'NATGAS': {
+                tdSymbol: 'NG/USD',
+                category: 'commodities',
+                name: 'Natural Gas',
+                base: 2.93,
+                pipSize: 0.001
+            },
+            'US30': {
+                tdSymbol: 'DJI',
+                category: 'indices',
+                name: 'US 30',
+                base: 51770.31,
+                pipSize: 0.1
+            },
+            'NAS100': {
+                tdSymbol: 'IXIC',
+                category: 'indices',
+                name: 'Nasdaq 100',
+                base: 20250,
+                pipSize: 0.1
+            },
+            'AAPL': {
+                tdSymbol: 'AAPL',
+                category: 'stocks',
+                name: 'Apple Inc.',
+                base: 232.50,
+                pipSize: 0.01
+            },
+            'NVDA': {
+                tdSymbol: 'NVDA',
+                category: 'stocks',
+                name: 'NVIDIA Corp.',
+                base: 138.25,
+                pipSize: 0.01
+            }
+        };
+
+        Object.keys(symbolsDatabase).forEach(s => {
+            symbolsDatabase[s].price = symbolsDatabase[s].base;
+            symbolsDatabase[s].prevPrice = symbolsDatabase[s].base;
+            symbolsDatabase[s].openPrice = symbolsDatabase[s].base;
+        });
+
+        let currentCategory = 'forex';
+        let tdHealthy = false;
+        let tdFailures = 0;
+        const TD_MAX_FAILURES = 3;
+
+        /* ============ SHARED TX ACCOUNT LAYER (same key as chart page) ============ */
+
+        function txReadAccount() {
+            try {
+                const raw = localStorage.getItem(TX_ACCOUNT_KEY);
+                if (raw) {
+                    const acc = JSON.parse(raw);
+                    return {
+                        balances: {
+                            Demo: (acc.balances && acc.balances.Demo !== undefined) ? Number(acc.balances.Demo) : 10000.00,
+                            Real: (acc.balances && acc.balances.Real !== undefined) ? Number(acc.balances.Real) : 0.00
+                        },
+                        activeType: acc.activeType === 'Real' ? 'Real' : 'Demo',
+                        activeId: acc.activeId || (acc.activeType === 'Real' ? 'LIV982104' : 'DNP142887')
+                    };
+                }
+            } catch (e) { /* fall through */ }
+            return {
+                balances: {
+                    Demo: 10000.00,
+                    Real: 0.00
+                },
+                activeType: 'Demo',
+                activeId: 'DNP142887'
+            };
+        }
+
+        function txWriteAccount(acc) {
+            localStorage.setItem(TX_ACCOUNT_KEY, JSON.stringify(acc));
+            window.dispatchEvent(new CustomEvent('tx:account-updated'));
+        }
+
+        /* ============ SHARED TX TRADES LAYER (same key as chart page) ============ */
+
+        function txReadTrades() {
+            try {
+                return JSON.parse(localStorage.getItem(TX_TRADES_KEY)) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function txWriteTrades(arr) {
+            localStorage.setItem(TX_TRADES_KEY, JSON.stringify(arr));
+            window.dispatchEvent(new CustomEvent('tx:trades-updated'));
+        }
+
+        function txTradePL(trade, currentPrice) {
+            const dir = trade.type === 'buy' ? 1 : -1;
+            const cs = TX_CONTRACT_SIZES[trade.symbol] || 1;
+            return ((Number(currentPrice) - Number(trade.entryPrice)) * dir * Number(trade.lots) * cs) / TX_LEVERAGE;
+        }
+
+        function activeAccountType() {
+            return txReadAccount().activeType === 'Real' ? 'Real' : 'Demo';
+        }
+
+        function activeBalance() {
+            const acc = txReadAccount();
+            return acc.activeType === 'Real' ? (acc.balances.Real || 0) : (acc.balances.Demo || 0);
+        }
+
+        function requiredMargin(symbol, lot) {
+            const d = symbolsDatabase[symbol];
+            if (!d) return 0;
+            return priceOf(symbol) * lot * (TX_CONTRACT_SIZES[symbol] || 1) / TX_LEVERAGE;
+        }
+
+        function openMarginUsedFor(accType) {
+            return txReadTrades().filter(t => t.account === accType && t.status === 'open')
+                .reduce((sum, t) => sum + requiredMargin(t.symbol, t.lots), 0);
+        }
+
+        /* ============ PRICE / QUOTE HELPERS ============ */
+
+        function decimals(sym) {
+            const p = symbolsDatabase[sym].pipSize;
+            return p >= 0.01 ? 2 : (p >= 0.001 ? 3 : 5);
+        }
+
+        function priceOf(sym) {
+            const d = symbolsDatabase[sym];
+            return d.price !== undefined ? d.price : d.base;
+        }
+
+        function quoteSymbol(sym) {
+            const mid = priceOf(sym);
+            const spread = mid * SPREAD_PCT;
+            return {
+                mid,
+                sell: +(mid - spread / 2).toFixed(decimals(sym)),
+                buy: +(mid + spread / 2).toFixed(decimals(sym))
+            };
+        }
+
+        function changePct(sym) {
+            const d = symbolsDatabase[sym];
+            const open = d.openPrice || d.base;
+            return ((priceOf(sym) - open) / open) * 100;
+        }
+
+        /* ============ SHARED AUTH HELPERS ============ */
+
+        function getCurrentUser() {
+            try {
+                const user = localStorage.getItem(CURRENT_USER_KEY);
+                return user ? JSON.parse(user) : null;
+            } catch (e) {
+                console.error('Error parsing current user', e);
+                return null;
+            }
+        }
+
+        function getCurrentUserId() {
+            try {
+                const user = JSON.parse(localStorage.getItem(CURRENT_USER_KEY));
+                return user ? (user.id || user._id) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /* ============ SERVER WALLET SYNC (same behavior as chart page) ============ */
+
+        async function loadUserDashboard() {
+            const userId = getCurrentUserId();
+            if (!userId) {
+                console.warn('No active user logged in.');
+                return;
+            }
+
+            try {
+                // Fetch the individual user profile (not restricted admin routes)
+                const response = await fetch(`/api/auth/profile/${userId}`);
+                const data = await response.json();
+
+                if (data.success && data.user && data.user.wallet) {
+                    // Update localStorage currentUser copy
+                    const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || '{}');
+                    currentUser.wallet = data.user.wallet;
+                    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+
+                    // Sync into the shared tradexora_account structure
+                    const acc = txReadAccount();
+                    acc.balances.Real = data.user.wallet.realBalance || 0;
+                    acc.balances.Demo = data.user.wallet.demoBalance || 10000;
+                    txWriteAccount(acc);
+
+                    updateAccountDisplays();
+                }
+            } catch (err) {
+                console.error('Error loading user dashboard profile:', err);
+            }
+        }
+
+        // Run on load and poll every 4 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            loadUserDashboard();
+        });
+        setInterval(loadUserDashboard, 4000);
+
+        /* ============ UI: PAGE TITLE ============ */
+
+        function initPageTitle() {
+            const user = getCurrentUser();
+
+            let displayName = 'NOONES';
+            if (user) {
+                if (user.fullName && user.fullName.trim() !== '') {
+                    displayName = user.fullName.trim();
+                } else if (user.email) {
+                    displayName = user.email.split('@')[0];
+                }
+            }
+
+            document.getElementById('pageTitleName').textContent = displayName;
+            document.title = 'TRADEXORA Trading - Markets & News / ' + displayName;
+        }
+
+        /* ============ UI: ACCOUNT DISPLAYS ============ */
+
+        function formatUsd(n) {
+            return '$' + Number(n || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function updateAccountDisplays() {
+            const acc = txReadAccount();
+            const isActiveDemo = acc.activeType === 'Demo';
+            const balance = isActiveDemo ? acc.balances.Demo : acc.balances.Real;
+            const formatted = formatUsd(balance);
+
+            document.getElementById('activeAccountType').textContent = `${acc.activeType} ${formatted}`;
+            document.getElementById('activeAccountId').textContent = acc.activeId;
+
+            const ddDemo = document.getElementById('dropdownDemoBalance');
+            const ddLive = document.getElementById('dropdownLiveBalance');
+            if (ddDemo) ddDemo.textContent = formatUsd(acc.balances.Demo);
+            if (ddLive) ddLive.textContent = formatUsd(acc.balances.Real);
+
+            const note = document.getElementById('topMoverNote');
+            if (note) note.textContent = `One-click orders use ${acc.activeType.toUpperCase()} · ${acc.activeId} with lot 0.10.`;
+
+            updateTradesBadge();
+        }
+
+        /* ============ UI: TRADES P/L BADGE (shared state) ============ */
+
+        function updateTradesBadge() {
+            const badge = document.getElementById('tradesProfitBadge');
+            if (!badge) return;
+            const accType = activeAccountType();
+            const total = txReadTrades()
+                .filter(t => t.status === 'open' && t.account === accType)
+                .reduce((sum, t) => sum + txTradePL(t, t.currentPrice), 0);
+            badge.textContent = (total >= 0 ? '+ $' : '- $') +
+                Math.abs(total).toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                });
+        }
+
+        /* ============ UI: INSTRUMENT CARDS ============ */
+
+        function renderInstrumentCard(sym) {
+            const d = symbolsDatabase[sym];
+            const q = quoteSymbol(sym);
+            const lots = [0.01, 0.10, 0.50, 1.00];
+
+            return `
+            <div class="instrument-card border border-gray-100 rounded-2xl p-4 bg-white space-y-3 shadow-xs" data-symbol="${sym}" data-category="${d.category}">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2 cursor-pointer" onclick="openChart('${sym}')">
+                        <i class="fa-regular fa-star text-gray-300 text-xs cursor-pointer hover:text-red-500" onclick="event.stopPropagation(); toggleFavorite(this, '${sym}')"></i>
+                        <div>
+                            <div class="text-xs font-extrabold text-gray-900 instrument-symbol">${sym}</div>
+                            <div class="text-[10px] text-gray-400 font-medium">${d.name} · Tap to open chart</div>
+                        </div>
+                    </div>
+                    <div class="text-right" id="priceBox-${sym}">
+                        <div class="text-xs font-extrabold text-gray-900 instrument-mid">${q.mid.toFixed(decimals(sym))}</div>
+                        <div class="text-[10px] font-bold instrument-change ${changePct(sym) >= 0 ? 'text-emerald-600' : 'text-red-500'}">${changePct(sym) >= 0 ? '+' : ''}${changePct(sym).toFixed(2)}%</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2 items-center">
+                    <button onclick="executeOrder('${sym}', 'SELL')" class="col-span-3 bg-[#e53e3e] hover:bg-red-700 text-white rounded-xl py-2.5 px-2 text-center transition-colors">
+                        <div class="text-[9px] font-extrabold uppercase opacity-80">SELL</div>
+                        <div class="text-xs font-black tracking-tight instrument-sell">${q.sell.toFixed(decimals(sym))}</div>
+                    </button>
+
+                    <div class="col-span-1 text-center bg-gray-50 border border-gray-200 rounded-xl py-1.5 px-1">
+                        <div class="text-[8px] font-bold text-gray-400 uppercase">LOT</div>
+                        <select id="lot-${sym}" class="text-xs font-bold text-gray-800 bg-transparent focus:outline-none text-center w-full cursor-pointer">
+                            ${lots.map(l => `<option value="${l.toFixed(2)}" ${l === 0.10 ? 'selected' : ''}>${l.toFixed(2)}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <button onclick="executeOrder('${sym}', 'BUY')" class="col-span-3 bg-[#16a34a] hover:bg-green-700 text-white rounded-xl py-2.5 px-2 text-center transition-colors">
+                        <div class="text-[9px] font-extrabold uppercase opacity-80">BUY</div>
+                        <div class="text-xs font-black tracking-tight instrument-buy">${q.buy.toFixed(decimals(sym))}</div>
+                    </button>
+                </div>
+            </div>`;
+        }
+
+        function renderInstruments() {
+            const grid = document.getElementById('instrumentsGrid');
+            const syms = Object.keys(symbolsDatabase).filter(s => symbolsDatabase[s].category === currentCategory);
+            grid.innerHTML = syms.map(renderInstrumentCard).join('');
+            updateTopMover();
+        }
+
+        function updatePrices() {
+            Object.keys(symbolsDatabase).forEach(sym => {
+                const card = document.querySelector(`.instrument-card[data-symbol="${sym}"]`);
+                if (!card) return;
+                const d = symbolsDatabase[sym];
+                const q = quoteSymbol(sym);
+                const dec = decimals(sym);
+
+                const midEl = card.querySelector('.instrument-mid');
+                const sellEl = card.querySelector('.instrument-sell');
+                const buyEl = card.querySelector('.instrument-buy');
+                const chgEl = card.querySelector('.instrument-change');
+
+                if (midEl) midEl.textContent = q.mid.toFixed(dec);
+                if (sellEl) sellEl.textContent = q.sell.toFixed(dec);
+                if (buyEl) buyEl.textContent = q.buy.toFixed(dec);
+                if (chgEl) {
+                    const pct = changePct(sym);
+                    chgEl.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+                    chgEl.className = `text-[10px] font-bold instrument-change ${pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
+                }
+
+                // Flash on price change
+                const box = document.getElementById(`priceBox-${sym}`);
+                if (box && d.price !== d.prevPrice) {
+                    box.classList.remove('flash-up', 'flash-down');
+                    void box.offsetWidth; // restart animation
+                    box.classList.add(d.price > d.prevPrice ? 'flash-up' : 'flash-down');
+                    d.prevPrice = d.price;
+                }
+            });
+            updateTopMover();
+        }
+
+        function updateTopMover() {
+            let topSym = null;
+            let topAbs = -1;
+            Object.keys(symbolsDatabase).forEach(sym => {
+                const abs = Math.abs(changePct(sym));
+                if (abs > topAbs) {
+                    topAbs = abs;
+                    topSym = sym;
+                }
+            });
+            if (!topSym) return;
+            const d = symbolsDatabase[topSym];
+            const q = quoteSymbol(topSym);
+            const pct = changePct(topSym);
+            const el1 = document.getElementById('topMoverSymbol');
+            const el2 = document.getElementById('topMoverName');
+            const el3 = document.getElementById('topMoverPrice');
+            const el4 = document.getElementById('topMoverChange');
+            if (el1) el1.textContent = topSym;
+            if (el2) el2.textContent = d.name;
+            if (el3) el3.textContent = q.mid.toFixed(decimals(topSym));
+            if (el4) {
+                el4.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+                el4.className = `text-[10px] font-bold ${pct >= 0 ? 'text-emerald-600' : 'text-red-500'}`;
+            }
+        }
+
+        /* ============ CATEGORY / SEARCH ============ */
+
+        function switchCategory(category, element) {
+            currentCategory = category;
+            document.querySelectorAll('.category-tab').forEach(tab => {
+                tab.className = 'category-tab hover:text-gray-800 pb-2 whitespace-nowrap';
+            });
+            element.className = 'category-tab text-[#e53e3e] font-bold border-b-2 border-[#e53e3e] pb-2 whitespace-nowrap';
+            renderInstruments();
+            document.getElementById('searchInput').value = '';
+        }
+
+        function filterInstruments() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            document.querySelectorAll('.instrument-card').forEach(card => {
+                const symbolEl = card.querySelector('.instrument-symbol');
+                const nameEl = card.querySelector('.instrument-symbol');
+                const symbol = symbolEl ? symbolEl.innerText.toLowerCase() : '';
+                const sym = card.getAttribute('data-symbol') || '';
+                const match = symbol.includes(query) || sym.toLowerCase().includes(query);
+                card.classList.toggle('hidden', !match);
+            });
+        }
+
+        function toggleFavorite(el, sym) {
+            el.classList.toggle('fa-regular');
+            el.classList.toggle('fa-solid');
+            el.classList.toggle('text-red-500');
+            el.classList.toggle('text-gray-300');
+            showToast((el.classList.contains('fa-solid') ? 'Added ' : 'Removed ') + sym + (el.classList.contains('fa-solid') ? ' to favorites' : ' from favorites'));
+        }
+
+        function openChart(sym) {
+            // Store the requested symbol so the TradesChart page can auto-select it
+            localStorage.setItem('tradexora_selected_symbol', sym);
+            window.location.href = '../TradesChart/index.html';
+        }
+
+        /* ============ ORDER EXECUTION (shared tradexora_trades) ============ */
+
+        function executeOrder(symbol, action) {
+            const d = symbolsDatabase[symbol];
+            if (!d) return;
+
+            const lotEl = document.getElementById(`lot-${symbol}`);
+            const lot = lotEl ? (parseFloat(lotEl.value) || 0.10) : 0.10;
+            if (lot < 0.01) {
+                showToast('Minimum lot size is 0.01');
+                return;
+            }
+
+            const accType = activeAccountType();
+            const balance = activeBalance();
+            const margin = requiredMargin(symbol, lot);
+            const freeMargin = balance - openMarginUsedFor(accType);
+
+            if (margin > freeMargin) {
+                showToast(`Insufficient funds: required margin ${formatUsd(margin)} exceeds free margin ${formatUsd(Math.max(0, freeMargin))}. Please deposit funds.`);
+                return;
+            }
+
+            const q = quoteSymbol(symbol);
+            const entry = action === 'BUY' ? q.buy : q.sell;
+
+            const trades = txReadTrades();
+            const t = {
+                id: Date.now() + Math.floor(Math.random() * 1000),
+                symbol,
+                type: action === 'BUY' ? 'buy' : 'sell',
+                lots: lot,
+                entryPrice: entry,
+                currentPrice: entry,
+                sl: null,
+                tp: null,
+                date: new Date().toLocaleString(),
+                status: 'open',
+                account: accType,
+                closedPL: 0,
+                closedReason: '',
+                closedAt: '',
+                source: 'manual'
+            };
+            trades.unshift(t);
+            txWriteTrades(trades);
+
+            updateTradesBadge();
+            showToast(`${action} ${lot.toFixed(2)} ${symbol} @ ${entry.toFixed(decimals(symbol))} executed on ${accType} account`);
+        }
+
+        /* ============ PRICE FEEDS ============ */
+
+        function simTick(sym) {
+            const d = symbolsDatabase[sym];
+            const cur = priceOf(sym);
+            const vol = cur * 0.0004;
+            d.price = +(cur + (Math.random() * 2 - 1) * vol).toFixed(decimals(sym));
+        }
+
+        async function fetchTdQuote(sym) {
+            const d = symbolsDatabase[sym];
+            const url = `https://api.twelvedata.com/quote?symbol=${encodeURIComponent(d.tdSymbol)}&apikey=${TWELVE_DATA_API_KEY}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error('Twelve Data HTTP ' + res.status);
+            const j = await res.json();
+            if (j.status === 'error' || !j.close) throw new Error('Twelve Data: ' + (j.message || 'no data'));
+            return j;
+        }
+
+        async function refreshSymbolFromTd(sym) {
+            try {
+                const j = await fetchTdQuote(sym);
+                const price = +(+j.close).toFixed(decimals(sym));
+                if (price > 0) {
+                    symbolsDatabase[sym].price = price;
+                    tdHealthy = true;
+                    tdFailures = 0;
+                }
+            } catch (e) {
+                tdFailures++;
+                if (tdFailures >= TD_MAX_FAILURES && tdHealthy) tdHealthy = false;
+            }
+        }
+
+        function startTdPolling() {
+            Object.keys(symbolsDatabase).forEach(refreshSymbolFromTd);
+            setInterval(() => {
+                // Poll all symbols sequentially (Twelve Data free tier limits)
+                const syms = Object.keys(symbolsDatabase);
+                (async () => {
+                    for (const sym of syms) {
+                        await refreshSymbolFromTd(sym);
+                    }
+                })();
+            }, TD_POLL_MS);
+        }
+
+        let binanceWs = null;
+
+        function connectCryptoFeed() {
+            try {
+                binanceWs = new WebSocket('wss://stream.binance.com:9443/stream?streams=btcusdt/aggTrade/ethusdt/aggTrade');
+                binanceWs.onmessage = (ev) => {
+                    try {
+                        const msg = JSON.parse(ev.data);
+                        const stream = msg.stream || '';
+                        const sym = stream.startsWith('btcusdt') ? 'BTCUSD' : stream.startsWith('ethusdt') ? 'ETHUSD' : null;
+                        if (!sym || !msg.data) return;
+                        symbolsDatabase[sym].price = +(+msg.data.p).toFixed(decimals(sym));
+                    } catch (e) { /* ignore */ }
+                };
+            } catch (e) { /* ignore */ }
+        }
+
+        /* ============ ACCOUNT DROPDOWN ============ */
+
+        function toggleAccountDropdown() {
+            document.getElementById('accountDropdown').classList.toggle('hidden');
+        }
+
+        window.addEventListener('click', function(e) {
+            const dropdown = document.getElementById('accountDropdown');
+            const dropdownBtn = document.getElementById('accountDropdownBtn');
+            if (dropdown && dropdownBtn && !dropdownBtn.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        function selectAccount(type) {
+            const acc = txReadAccount();
+            acc.activeType = type;
+            acc.activeId = type === 'Real' ? 'LIV982104' : 'DNP142887';
+            txWriteAccount(acc); // chart page now uses the same active account
+            updateAccountDisplays();
+            showToast(`Switched to ${type} Account`);
+        }
+
+        /* ============ LOGOUT ============ */
+
+        function handleLogout() {
+            localStorage.removeItem(CURRENT_USER_KEY);
+            showToast('Session cleared. Logging out...');
+            setTimeout(() => {
+                window.location.href = INDEX_URL;
+            }, 900);
+        }
+
+        /* ============ CROSS-TAB / SAME-TAB SYNC ============ */
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === TX_ACCOUNT_KEY) {
+                updateAccountDisplays();
+            } else if (e.key === TX_TRADES_KEY) {
+                updateTradesBadge();
+            }
+        });
+
+        window.addEventListener('tx:account-updated', updateAccountDisplays);
+        window.addEventListener('tx:trades-updated', updateTradesBadge);
+
+        /* ============ TOAST ============ */
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = message;
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0');
+            }, 2500);
+        }
+
+        /* ============ INIT ============ */
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initPageTitle();
+            updateAccountDisplays();
+            renderInstruments();
+            connectCryptoFeed();
+            startTdPolling();
+            updateTradesBadge();
+
+            // Simulated ticks when Twelve Data is unavailable (crypto excluded — it has Binance WS)
+            setInterval(() => {
+                if (tdHealthy) return;
+                Object.keys(symbolsDatabase).forEach(sym => {
+                    if (sym === 'BTCUSD' || sym === 'ETHUSD') return;
+                    simTick(sym);
+                });
+            }, SIM_TICK_MS);
+
+            // UI price refresh
+            setInterval(updatePrices, 700);
+
+            // Trades badge refresh
+            setInterval(updateTradesBadge, 2000);
+
+            // If another page requested a specific symbol, highlight its category
+            const requested = localStorage.getItem('tradexora_selected_symbol');
+            if (requested && symbolsDatabase[requested]) {
+                localStorage.removeItem('tradexora_selected_symbol');
+                const cat = symbolsDatabase[requested].category;
+                const tab = document.querySelector(`.category-tab[data-cat="${cat}"]`);
+                if (tab) {
+                    switchCategory(cat, tab);
+                    showToast(`Loaded ${requested}`);
+                }
+            }
+        });
+    </script>
+    <script src="/js/wallet-sync.js"></script>
+</body>
+
+</html>

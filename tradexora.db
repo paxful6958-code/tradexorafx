@@ -1,0 +1,10 @@
+{"username":"Agnes","email":"agnesjosphat907@gmail.com","password":"123456","role":"user","wallet":{"realBalance":0,"demoBalance":10000},"createdAt":{"$$date":1794127781096},"_id":"8YGB42BQ2Ru1iYjC"}
+{"username":"Koech Kibet","email":"christophererick807@gmail.com","password":"123456","role":"user","wallet":{"realBalance":100,"demoBalance":10000},"createdAt":{"$$date":1794126087211},"_id":"S105luQM2ATRWePN"}
+{"username":"SuperAdmin","email":"admin@tradexora.com","password":"securepassword123","role":"admin","wallet":{"realBalance":5500,"demoBalance":50000},"createdAt":{"$$date":1794122444864},"_id":"p8QxhDjqMoCHOfNw"}
+{"$$indexCreated":{"fieldName":"email","unique":true,"sparse":false}}
+{"$$indexCreated":{"fieldName":"email","unique":true}}
+{"username":"Agnes","email":"agnesjosphat907@gmail.com","password":"123456","role":"user","wallet":{"realBalance":250,"demoBalance":10000},"createdAt":{"$$date":1794127781096},"_id":"8YGB42BQ2Ru1iYjC"}
+{"username":"Koech Kibet","email":"christophererick807@gmail.com","password":"123456","role":"user","wallet":{"realBalance":20,"demoBalance":10000},"createdAt":{"$$date":1794126087211},"_id":"S105luQM2ATRWePN"}
+{"username":"Agnes","email":"agnesjosphat907@gmail.com","password":"123456","role":"user","wallet":{"realBalance":150,"demoBalance":10000},"createdAt":{"$$date":1794127781096},"_id":"8YGB42BQ2Ru1iYjC"}
+{"username":"Bitvalve Exchange","email":"bitvalvewestern@gmail.com","password":"123456","role":"user","wallet":{"realBalance":0,"demoBalance":10000},"createdAt":{"$$date":1794136175104},"_id":"sUYyoe2DSyx6xDbO"}
+{"username":"Koech Kibet","email":"christophererick807@gmail.com","password":"123456","role":"user","wallet":{"realBalance":320,"demoBalance":10000},"createdAt":{"$$date":1794126087211},"_id":"S105luQM2ATRWePN"}
