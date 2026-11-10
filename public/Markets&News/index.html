@@ -614,32 +614,66 @@
                 .reduce((sum, t) => sum + requiredMargin(t.symbol, t.lots), 0);
         }
 
-        /* ============ PRICE / QUOTE HELPERS ============ */
+        /* ============ SERVER WALLET SYNC (same behavior as chart page) ============ */
 
-        function decimals(sym) {
-            const p = symbolsDatabase[sym].pipSize;
-            return p >= 0.01 ? 2 : (p >= 0.001 ? 3 : 5);
+        // Persist a closed trade's P/L (profit OR loss) to the NeDB backend so
+        // future polls read the NEW balance. Called whenever a trade closes.
+        async function syncWalletToServer(accountType, profitAmount) {
+            const userId = localStorage.getItem('tradexora_user_id') ||
+                localStorage.getItem('userId') ||
+                getCurrentUserId();
+            if (!userId) {
+                console.warn('syncWalletToServer: no userId found, skipping server sync.');
+                return;
+            }
+            try {
+                const res = await fetch('/api/auth/wallet/update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: userId,
+                        accountType: accountType, // 'Real' or 'Demo'
+                        profitAmount: profitAmount // signed: +profit / -loss
+                    })
+                });
+                if (!res.ok) throw new Error('Wallet sync HTTP ' + res.status);
+                console.log('Wallet balance persisted to database successfully.');
+            } catch (err) {
+                console.error('Failed to persist balance to server:', err);
+            }
         }
 
-        function priceOf(sym) {
-            const d = symbolsDatabase[sym];
-            return d.price !== undefined ? d.price : d.base;
-        }
+        // Shared close-trade routine for this page: applies the P/L to the
+        // local balance instantly, then awaits the backend sync before/alongside
+        // updating localStorage. Works for AI (bot) and manual trades alike.
+        async function closeTradeWithSync(tradeId, closePrice, reason) {
+            const trades = txReadTrades();
+            const t = trades.find(x => String(x.id) === String(tradeId));
+            if (!t || t.status === 'closed') return null;
 
-        function quoteSymbol(sym) {
-            const mid = priceOf(sym);
-            const spread = mid * SPREAD_PCT;
-            return {
-                mid,
-                sell: +(mid - spread / 2).toFixed(decimals(sym)),
-                buy: +(mid + spread / 2).toFixed(decimals(sym))
-            };
-        }
+            const price = (closePrice !== undefined && closePrice !== null) ? closePrice : Number(t.currentPrice);
+            const pl = txTradePL(t, price);
 
-        function changePct(sym) {
-            const d = symbolsDatabase[sym];
-            const open = d.openPrice || d.base;
-            return ((priceOf(sym) - open) / open) * 100;
+            // 1. Immediately update UI locally for instant feedback
+            t.status = 'closed';
+            t.closedPL = pl;
+            t.closedReason = reason || 'Manual close';
+            t.closedAt = new Date().toLocaleString();
+            t.currentPrice = Number(price);
+
+            const acc = txReadAccount();
+            acc.balances[t.account] = (acc.balances[t.account] || 0) + pl;
+            txWriteTrades(trades);
+            txWriteAccount(acc);
+            updateAccountDisplays();
+
+            // 2. IMMEDIATELY persist to NeDB backend so future polls read the NEW balance
+            await syncWalletToServer(t.account, pl);
+
+            showToast(`${t.symbol} closed — P/L ${pl >= 0 ? '+' : '-'}${formatUsd(Math.abs(pl))}`);
+            return t;
         }
 
         /* ============ SHARED AUTH HELPERS ============ */
@@ -663,7 +697,7 @@
             }
         }
 
-        /* ============ SERVER WALLET SYNC (same behavior as chart page) ============ */
+        /* ============ SERVER PROFILE LOAD (same behavior as chart page) ============ */
 
         async function loadUserDashboard() {
             const userId = getCurrentUserId();
@@ -964,6 +998,34 @@
 
             updateTradesBadge();
             showToast(`${action} ${lot.toFixed(2)} ${symbol} @ ${entry.toFixed(decimals(symbol))} executed on ${accType} account`);
+        }
+
+        /* ============ PRICE / QUOTE HELPERS ============ */
+
+        function decimals(sym) {
+            const p = symbolsDatabase[sym].pipSize;
+            return p >= 0.01 ? 2 : (p >= 0.001 ? 3 : 5);
+        }
+
+        function priceOf(sym) {
+            const d = symbolsDatabase[sym];
+            return d.price !== undefined ? d.price : d.base;
+        }
+
+        function quoteSymbol(sym) {
+            const mid = priceOf(sym);
+            const spread = mid * SPREAD_PCT;
+            return {
+                mid,
+                sell: +(mid - spread / 2).toFixed(decimals(sym)),
+                buy: +(mid + spread / 2).toFixed(decimals(sym))
+            };
+        }
+
+        function changePct(sym) {
+            const d = symbolsDatabase[sym];
+            const open = d.openPrice || d.base;
+            return ((priceOf(sym) - open) / open) * 100;
         }
 
         /* ============ PRICE FEEDS ============ */

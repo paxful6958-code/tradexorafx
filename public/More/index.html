@@ -685,7 +685,6 @@
         const TX_TRADES_KEY = 'tradexora_trades';
         const INDEX_URL = '../index.html';
 
-        // Shared TX contract sizes (must match the TradesChart page TX layer)
         const TX_CONTRACT_SIZES = {
             USOIL: 1000,
             NATGAS: 10000,
@@ -704,8 +703,6 @@
         const TX_LEVERAGE = 100;
 
         let isEditingProfile = false;
-
-        /* ============ SHARED TX ACCOUNT LAYER (same key as chart page) ============ */
 
         function txReadAccount() {
             try {
@@ -737,8 +734,6 @@
             window.dispatchEvent(new CustomEvent('tx:account-updated'));
         }
 
-        /* ============ SHARED TX TRADES LAYER (same key as chart page) ============ */
-
         function txReadTrades() {
             try {
                 return JSON.parse(localStorage.getItem(TX_TRADES_KEY)) || [];
@@ -767,8 +762,6 @@
                 });
         }
 
-        /* ============ SHARED AUTH HELPERS ============ */
-
         function getCurrentUser() {
             try {
                 const user = localStorage.getItem(CURRENT_USER_KEY);
@@ -788,22 +781,15 @@
             }
         }
 
-        /* ============ SERVER SYNC (profile + wallet, same behavior as other pages) ============ */
-
         async function loadUserDashboard() {
             const userId = getCurrentUserId();
-            if (!userId) {
-                console.warn('No active user logged in.');
-                return;
-            }
+            if (!userId) return;
 
             try {
-                // Fetch the individual user profile (not restricted admin routes)
                 const response = await fetch(`/api/auth/profile/${userId}`);
                 const data = await response.json();
 
                 if (data.success && data.user) {
-                    // Merge fresh server data into the localStorage currentUser copy
                     const currentUser = JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || '{}');
                     if (data.user.wallet) currentUser.wallet = data.user.wallet;
                     if (data.user.fullName) currentUser.fullName = data.user.fullName;
@@ -816,7 +802,6 @@
                     if (data.user.kycStatus) currentUser.kycStatus = data.user.kycStatus;
                     localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
 
-                    // Sync wallet into the shared tradexora_account structure
                     if (data.user.wallet) {
                         const acc = txReadAccount();
                         acc.balances.Real = data.user.wallet.realBalance || 0;
@@ -824,7 +809,6 @@
                         txWriteAccount(acc);
                     }
 
-                    // Refresh UI
                     loadProfileData();
                     updateAccountDisplays();
                 }
@@ -833,13 +817,10 @@
             }
         }
 
-        // Run on load and poll every 4 seconds
         document.addEventListener('DOMContentLoaded', () => {
             loadUserDashboard();
         });
         setInterval(loadUserDashboard, 4000);
-
-        /* ============ UI: ACCOUNT DISPLAYS ============ */
 
         function formatUsd(n) {
             return '$' + Number(n || 0).toLocaleString('en-US', {
@@ -867,8 +848,6 @@
             updateTradesBadge();
         }
 
-        /* ============ PROFILE ============ */
-
         function loadProfileData() {
             const user = getCurrentUser();
 
@@ -882,13 +861,11 @@
             const country = user.country || '';
             const dob = user.dob || user.dateOfBirth || '';
 
-            // Populate header and titles
             document.querySelectorAll('.pageTitleName').forEach(el => {
                 el.textContent = fullName;
             });
             document.title = 'TRADEXORA Trading - More / ' + fullName;
 
-            // Populate profile display elements (guard against missing elements)
             const nameDisp = document.getElementById('profileNameDisplay');
             const emailDisp = document.getElementById('profileEmailDisplay');
             const phoneDisp = document.getElementById('profilePhoneDisplay');
@@ -900,7 +877,6 @@
             if (countryDisp) countryDisp.textContent = country || 'Not set';
             if (dobDisp) dobDisp.textContent = dob || 'Not set';
 
-            // KYC status badge (server value if available)
             const kycBadge = document.getElementById('kycStatusBadge');
             if (kycBadge) {
                 const status = (user.kycStatus || 'PENDING').toUpperCase();
@@ -911,7 +887,6 @@
                         'text-amber-800 bg-amber-50');
             }
 
-            // Only update input values when NOT editing, so we don't clobber user typing
             if (!isEditingProfile) {
                 const nameInp = document.getElementById('profileNameInput');
                 const emailInp = document.getElementById('profileEmailInput');
@@ -926,7 +901,6 @@
             }
         }
 
-        /* Toggle Edit Mode on Profile */
         function toggleEditProfile() {
             isEditingProfile = !isEditingProfile;
 
@@ -973,7 +947,6 @@
 
             localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
 
-            // Best-effort server sync (non-blocking; server poll will reconcile anyway)
             const userId = getCurrentUserId();
             if (userId) {
                 try {
@@ -1000,7 +973,6 @@
             showToast('Profile updated successfully');
         }
 
-        /* Navigation routing between page sections */
         function navigateTo(pageId) {
             document.querySelectorAll('.page-view').forEach(view => {
                 view.classList.remove('active');
@@ -1014,8 +986,6 @@
                 });
             }
         }
-
-        /* ============ ACCOUNT DROPDOWN ============ */
 
         function toggleAccountDropdown() {
             document.getElementById('accountDropdown').classList.toggle('hidden');
@@ -1033,13 +1003,11 @@
             const acc = txReadAccount();
             acc.activeType = type;
             acc.activeId = type === 'Real' ? 'LIV982104' : 'DNP142887';
-            txWriteAccount(acc); // chart page now uses the same active account
+            txWriteAccount(acc);
             updateAccountDisplays();
             document.getElementById('accountDropdown').classList.add('hidden');
             showToast(`Switched to ${type} Account`);
         }
-
-        /* ============ SETTINGS (persisted) ============ */
 
         function getPrefs() {
             try {
@@ -1067,7 +1035,7 @@
             savePrefs(Object.assign(getPrefs(), {
                 theme
             }));
-            showToast(theme === 'light' ? 'Light mode activated' : 'Dark mode activated (visual styling follows in a future update)');
+            showToast(theme === 'light' ? 'Light mode activated' : 'Dark mode activated');
         }
 
         function restorePrefs() {
@@ -1109,8 +1077,6 @@
             });
         }
 
-        /* ============ KYC ============ */
-
         function updateFileName(input, targetId) {
             const target = document.getElementById(targetId);
             if (input.files && input.files[0]) {
@@ -1137,11 +1103,15 @@
 
             const idType = document.getElementById('kycIdType').value;
             const proofType = document.getElementById('kycProofType').value;
-
-            // Build FormData and submit to the server if the endpoint exists
             const userId = getCurrentUserId();
+
+            if (!userId) {
+                showToast('Error: Please log in again to upload KYC');
+                return;
+            }
+
             const formData = new FormData();
-            formData.append('userId', userId || '');
+            formData.append('userId', userId);
             formData.append('idType', idType);
             formData.append('proofType', proofType);
             formData.append('idDocument', idFile.files[0]);
@@ -1154,32 +1124,22 @@
                 });
                 const data = await response.json().catch(() => ({}));
                 if (data.success) {
-                    showToast('Verification documents submitted');
-                    // Refresh the status from the server on the next poll
+                    showToast('Verification documents submitted successfully');
+                    document.getElementById('kycStatusBadge').innerText = "PENDING";
+                    navigateTo('profile');
                 } else {
-                    showToast(data.message || 'Submission failed — saved locally, will retry');
+                    showToast(data.message || 'Submission failed');
                 }
             } catch (err) {
-                console.warn('KYC endpoint not reachable, storing locally:', err);
-                // Fallback: remember pending submission locally
-                const pending = JSON.parse(localStorage.getItem('tradexora_kyc_pending') || '[]');
-                pending.push({
-                    idType,
-                    proofType,
-                    date: new Date().toLocaleString()
-                });
-                localStorage.setItem('tradexora_kyc_pending', JSON.stringify(pending));
-                showToast('Verification documents submitted');
+                console.warn('KYC endpoint error:', err);
+                showToast('Network error submitting documents');
             }
 
-            // Reset file inputs
             idFile.value = '';
             proofFile.value = '';
             document.getElementById('id-file-name').innerText = 'No file chosen';
             document.getElementById('proof-file-name').innerText = 'No file chosen';
         }
-
-        /* ============ CROSS-TAB / SAME-TAB SYNC ============ */
 
         window.addEventListener('storage', (e) => {
             if (e.key === TX_ACCOUNT_KEY) {
@@ -1191,8 +1151,6 @@
 
         window.addEventListener('tx:account-updated', updateAccountDisplays);
         window.addEventListener('tx:trades-updated', updateTradesBadge);
-
-        /* ============ TOAST ============ */
 
         function showToast(message) {
             const toast = document.getElementById('toast');
@@ -1206,8 +1164,6 @@
             }, 2500);
         }
 
-        /* ============ LOGOUT ============ */
-
         function handleLogout() {
             localStorage.removeItem(CURRENT_USER_KEY);
             showToast('Session cleared. Logging out...');
@@ -1215,8 +1171,6 @@
                 window.location.href = INDEX_URL;
             }, 900);
         }
-
-        /* ============ INIT ============ */
 
         document.addEventListener('DOMContentLoaded', () => {
             loadProfileData();

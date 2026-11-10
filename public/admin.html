@@ -21,10 +21,10 @@
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
+    <main class="max-w-7xl mx-auto px-4 py-8 space-y-8">
 
         <!-- Stats Overview -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-lg">
                 <h3 class="text-slate-400 text-sm font-medium">Total Users</h3>
                 <p id="totalUsersCount" class="text-3xl font-bold mt-2">0</p>
@@ -36,6 +36,32 @@
             <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 shadow-lg">
                 <h3 class="text-slate-400 text-sm font-medium">Active Session</h3>
                 <p class="text-sm font-semibold mt-3 text-slate-300 truncate" id="adminIdDisplay">Admin ID Configured</p>
+            </div>
+        </div>
+
+        <!-- PENDING KYC VERIFICATION QUEUE -->
+        <div class="bg-slate-800 border border-slate-700 rounded-xl shadow-lg overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center">
+                <h2 class="text-lg font-semibold flex items-center gap-2">
+                    <span>Pending KYC Verifications</span>
+                    <span id="pendingKycCount" class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-xs px-2.5 py-0.5 rounded-full">0</span>
+                </h2>
+                <button onclick="loadPendingKYC()" class="bg-slate-700 hover:bg-slate-600 text-xs px-3 py-1.5 rounded transition">Refresh KYC</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
+                            <th class="py-3 px-6">Trader</th>
+                            <th class="py-3 px-6">Identity Document</th>
+                            <th class="py-3 px-6">Proof of Address</th>
+                            <th class="py-3 px-6 text-right">Review Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="kycTableBody" class="divide-y divide-slate-700 text-sm">
+                        <!-- Dynamically populated via JS -->
+                    </tbody>
+                </table>
             </div>
         </div>
 
@@ -51,6 +77,7 @@
                         <tr class="bg-slate-900/50 text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700">
                             <th class="py-3 px-6">Username / Email</th>
                             <th class="py-3 px-6">Role</th>
+                            <th class="py-3 px-6">KYC Status</th>
                             <th class="py-3 px-6">Real Balance</th>
                             <th class="py-3 px-6">Demo Balance</th>
                             <th class="py-3 px-6 text-right">Actions</th>
@@ -98,11 +125,11 @@
         </div>
     </div>
 
+
     <!-- JavaScript Logic -->
     <script>
         const ADMIN_ID = localStorage.getItem('tradexora_admin_id');
 
-        // If no active admin session is found, redirect straight to the login page
         if (!ADMIN_ID) {
             window.location.href = '/admin-login';
         }
@@ -127,26 +154,32 @@
 
                 if (!data.success) {
                     alert('Session expired or access denied: ' + (data.message || 'Unauthorized'));
-                    localStorage.removeItem('tradexora_admin_id');
-                    window.location.href = '/admin-login';
+                    logoutAdmin();
                     return;
                 }
 
                 const users = data.users;
                 document.getElementById('totalUsersCount').innerText = users.length;
 
-                let totalBalance = 0;
+                let totalRealBalance = 0;
                 const tbody = document.getElementById('usersTableBody');
                 tbody.innerHTML = '';
 
                 users.forEach(user => {
-                    totalBalance += (user.wallet && user.wallet.realBalance) || 0;
+                    const realBal = (user.wallet && user.wallet.realBalance) !== undefined ? Number(user.wallet.realBalance) : 0;
+                    const demoBal = (user.wallet && user.wallet.demoBalance) !== undefined ? Number(user.wallet.demoBalance) : 10000;
+                    totalRealBalance += realBal;
+
+                    const kycStatus = user.kycStatus || 'PENDING';
+                    const kycBadgeColor = kycStatus === 'VERIFIED' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' :
+                        kycStatus === 'REJECTED' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                        'bg-amber-500/20 text-amber-400 border-amber-500/30';
 
                     const tr = document.createElement('tr');
                     tr.className = 'hover:bg-slate-700/40 transition';
                     tr.innerHTML = `
                         <td class="py-4 px-6">
-                            <div class="font-medium text-slate-200">${user.username}</div>
+                            <div class="font-medium text-slate-200">${user.username || user.fullName || 'Trader'}</div>
                             <div class="text-xs text-slate-400">${user.email}</div>
                         </td>
                         <td class="py-4 px-6">
@@ -154,10 +187,15 @@
                                 ${user.role}
                             </span>
                         </td>
-                        <td class="py-4 px-6 font-mono text-emerald-400">$${(user.wallet?.realBalance || 0).toFixed(2)}</td>
-                        <td class="py-4 px-6 font-mono text-slate-400">$${(user.wallet?.demoBalance || 0).toFixed(2)}</td>
+                        <td class="py-4 px-6">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-semibold border ${kycBadgeColor}">
+                                ${kycStatus}
+                            </span>
+                        </td>
+                        <td class="py-4 px-6 font-mono text-emerald-400">$${realBal.toFixed(2)}</td>
+                        <td class="py-4 px-6 font-mono text-slate-400">$${demoBal.toFixed(2)}</td>
                         <td class="py-4 px-6 text-right">
-                            <button onclick="openModal('${user._id}', '${user.username}')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded text-xs font-medium transition">
+                            <button onclick="openModal('${user._id}', '${user.username || user.email}')" class="bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded text-xs font-medium transition">
                                 Manage Funds
                             </button>
                         </td>
@@ -165,9 +203,88 @@
                     tbody.appendChild(tr);
                 });
 
-                document.getElementById('totalSystemBalance').innerText = `$${totalBalance.toFixed(2)}`;
+                document.getElementById('totalSystemBalance').innerText = `$${totalRealBalance.toFixed(2)}`;
             } catch (err) {
                 console.error('Error fetching users:', err);
+            }
+        }
+
+        async function loadPendingKYC() {
+            if (!ADMIN_ID) return;
+
+            try {
+                const response = await fetch('/api/admin/kyc-pending', {
+                    headers: {
+                        'x-admin-id': ADMIN_ID
+                    }
+                });
+                const data = await response.json();
+
+                if (!data.success) return;
+
+                const users = data.users || [];
+                document.getElementById('pendingKycCount').innerText = users.length;
+
+                const tbody = document.getElementById('kycTableBody');
+                tbody.innerHTML = '';
+
+                if (users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="py-6 text-center text-slate-400 text-xs">No pending KYC verifications found.</td></tr>`;
+                    return;
+                }
+
+                users.forEach(user => {
+                            const tr = document.createElement('tr');
+                            tr.className = 'hover:bg-slate-700/40 transition';
+                            tr.innerHTML = `
+                        <td class="py-4 px-6">
+                            <div class="font-medium text-slate-200">${user.username || user.fullName || 'Trader'}</div>
+                            <div class="text-xs text-slate-400">${user.email}</div>
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="text-xs text-slate-300 font-semibold uppercase">${user.kycIdType || 'ID'}</div>
+                            ${user.kycIdDocument ? `<a href="${user.kycIdDocument}" target="_blank" class="text-xs text-sky-400 hover:underline flex items-center gap-1 mt-1">View Document</a>` : '<span class="text-xs text-slate-500">Not uploaded</span>'}
+                        </td>
+                        <td class="py-4 px-6">
+                            <div class="text-xs text-slate-300 font-semibold uppercase">${user.kycProofType || 'Proof'}</div>
+                            ${user.kycProofDocument ? `<a href="${user.kycProofDocument}" target="_blank" class="text-xs text-sky-400 hover:underline flex items-center gap-1 mt-1">View Document</a>` : '<span class="text-xs text-slate-500">Not uploaded</span>'}
+                        </td>
+                        <td class="py-4 px-6 text-right space-x-2">
+                            <button onclick="submitKycAction('${user._id}', 'VERIFIED')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs font-semibold transition">Approve</button>
+                            <button onclick="submitKycAction('${user._id}', 'REJECTED')" class="bg-red-600/20 hover:bg-red-600/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded text-xs font-semibold transition">Reject</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                console.error('Error loading pending KYC:', err);
+            }
+        }
+
+        async function submitKycAction(userId, action) {
+            if (!confirm(`Are you sure you want to mark this KYC as ${action}?`)) return;
+
+            try {
+                const response = await fetch('/api/admin/kyc-action', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-id': ADMIN_ID
+                    },
+                    body: JSON.stringify({ userId, action })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    loadPendingKYC();
+                    loadUsers();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            } catch (err) {
+                console.error('Network error:', err);
+                alert('Failed to connect to server.');
             }
         }
 
@@ -200,12 +317,7 @@
                         'Content-Type': 'application/json',
                         'x-admin-id': ADMIN_ID
                     },
-                    body: JSON.stringify({
-                        userId,
-                        action,
-                        walletType,
-                        amount
-                    })
+                    body: JSON.stringify({ userId, action, walletType, amount })
                 });
 
                 const data = await response.json();
@@ -222,8 +334,13 @@
             }
         }
 
-        // Initial load
+        // Initial loads & Auto-polling every 4 seconds to sync live trading balance updates
         loadUsers();
+        loadPendingKYC();
+        setInterval(() => {
+            loadUsers();
+            loadPendingKYC();
+        }, 4000);
     </script>
 </body>
 

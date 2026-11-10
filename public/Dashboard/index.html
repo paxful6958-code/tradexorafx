@@ -327,7 +327,7 @@
 
             <div class="mb-5">
                 <h3 class="text-lg font-extrabold text-gray-900 tracking-tight">AI-powered trade execution</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Opens with instant profit of $20 – $40. Fast market scan. Smart risk handling.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Opens with instant profit of $20 – $30. Fast market scan. Smart risk handling.</p>
             </div>
 
             <div class="space-y-4">
@@ -529,11 +529,12 @@
                     closedPL: 0,
                     closedReason: '',
                     closedAt: '',
-                    source: source === 'bot' ? 'bot' : 'manual'
+                    source: source === 'bot' ? 'bot' : 'manual',
+                    startPL: (startPL !== undefined && isFinite(Number(startPL))) ? Number(startPL) : undefined
                 };
-                // AI-executed trades open at a guaranteed random starting profit ($20-$40)
-                if (t.source === 'bot' && Number.isFinite(startPL)) {
-                    t.currentPrice = +TX.priceForPL(t, startPL).toFixed(TX_DECIMALS[t.symbol] || 2);
+                // AI-executed trades open at a guaranteed random starting profit ($20-$30)
+                if (t.source === 'bot' && Number.isFinite(t.startPL)) {
+                    t.currentPrice = +TX.priceForPL(t, t.startPL).toFixed(TX_DECIMALS[t.symbol] || 2);
                 }
                 trades.unshift(t);
                 TX.writeTrades(trades);
@@ -541,7 +542,7 @@
             },
             tickPrices(priceFeed) {
                 // IMPORTANT: bot (AI) trades are excluded — they are owned by the
-                // oscillation engine so their P/L stays inside the $20-$40 band.
+                // oscillation engine so their P/L stays inside the $20-$30 band.
                 const trades = TX.readTrades();
                 let changed = false;
                 trades.forEach(t => {
@@ -572,9 +573,42 @@
                 t.currentPrice = Number(price);
                 const acc = TX.readAccount();
                 acc.balances[t.account] = (acc.balances[t.account] || 0) + pl;
+
+                // 1. Immediately update UI locally for instant feedback
                 TX.writeTrades(trades);
                 TX.writeAccount(acc);
+
+                // 2. Persist to NeDB backend so future polls read the NEW balance
+                //    (profit OR loss, AI OR manual — always synced)
+                TX.syncWalletToServer(t.account, pl);
+
                 return t;
+            },
+            async syncWalletToServer(accountType, profitAmount) {
+                const userId = localStorage.getItem('tradexora_user_id') ||
+                    localStorage.getItem('userId') ||
+                    (typeof getCurrentUserId === 'function' ? getCurrentUserId() : null);
+                if (!userId) {
+                    console.warn('syncWalletToServer: no userId found, skipping server sync.');
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/auth/wallet/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: userId,
+                            accountType: accountType, // 'Real' or 'Demo'
+                            profitAmount: profitAmount // signed: +profit / -loss
+                        })
+                    });
+                    if (!res.ok) throw new Error('Wallet sync HTTP ' + res.status);
+                    console.log('Wallet balance persisted to database successfully.');
+                } catch (err) {
+                    console.error('Failed to persist balance to server:', err);
+                }
             },
             resetDemoBalance() {
                 const acc = TX.readAccount();
@@ -604,10 +638,10 @@
         const AI_TP_ATR_MULT = 3.0;
         const ALLOW_CLOSED_MARKET_TRADING = true;
 
-        // AI trades ALWAYS open with a random profit in this band
+        // AI trades ALWAYS open with a random profit in this band ($20-$30)
         const AI_STARTING_PROFIT = {
             MIN: 20,
-            MAX: 40
+            MAX: 30
         };
 
         // Fast oscillation engine (owns all open bot/AI trades)
@@ -1659,7 +1693,7 @@
             return TX.tradePL(t, cur);
         }
 
-        /* AI trades: random starting profit between $20 and $40 */
+        /* AI trades: random starting profit between $20 and $30 */
         function randomStartingProfit() {
             return +(AI_STARTING_PROFIT.MIN + Math.random() * (AI_STARTING_PROFIT.MAX - AI_STARTING_PROFIT.MIN)).toFixed(2);
         }
@@ -1705,7 +1739,7 @@
                 entryPrice: entry,
                 account: isLiveAccount() ? 'Real' : 'Demo',
                 source: fromAI ? 'bot' : 'manual',
-                startPL: fromAI ? randomStartingProfit() : undefined, // AI: random $20-$40
+                startPL: fromAI ? randomStartingProfit() : undefined, // AI: random $20-$30
                 sl: opts.sl !== undefined ? opts.sl : null,
                 tp: opts.tp !== undefined ? opts.tp : null
             });
@@ -1748,13 +1782,17 @@
             }
         }
 
-        function settleTrade(t, closePrice, reason) {
+        async function settleTrade(t, closePrice, reason) {
             const closed = TX.closeTrade(t.id, reason, closePrice);
             if (!closed) return;
+            // Await backend persistence of the closed P/L (profit or loss)
+            if (TX.syncWalletToServer) {
+                await TX.syncWalletToServer(closed.account, closed.closedPL);
+            }
             showToast(reason, `${t.type.toUpperCase()} ${t.symbol} closed — P/L ${closed.closedPL >= 0 ? '+' : '-'}$${formatUsd(Math.abs(closed.closedPL))}`, closed.closedPL >= 0 ? 'success' : 'error');
         }
 
-        function closePositionById(id) {
+        async function closePositionById(id) {
             const t = TX.readTrades().find(x => String(x.id) === String(id) && x.status === 'open');
             if (!t) return;
             let cur;
@@ -1763,18 +1801,20 @@
                 const q = quoteSymbol(t.symbol);
                 cur = t.type === 'buy' ? q.sell : q.buy;
             }
-            settleTrade(t, cur, 'Position Closed');
+            await settleTrade(t, cur, 'Position Closed');
             renderOpenPositions();
             updateTradesBadge();
         }
 
-        function closeAllPositions() {
+        async function closeAllPositions() {
             const open = openPositions();
             if (!open.length) {
                 showToast('Positions', 'No open positions to close', 'info');
                 return;
             }
-            open.forEach(t => closePositionById(t.id));
+            for (const t of open) {
+                await closePositionById(t.id);
+            }
         }
 
         function renderOpenPositions() {
@@ -1938,7 +1978,7 @@
                 return;
             }
 
-            // AI trade opens with a guaranteed random profit between $20 and $40
+            // AI trade opens with a guaranteed random profit between $20 and $30
             const startPL = randomStartingProfit();
             const t = TX.openTrade({
                 symbol: pair,
@@ -2150,7 +2190,7 @@
 
         /* ---------- FAST OSCILLATION ENGINE ----------
            Every open AI (bot) trade oscillates rapidly, re-anchored each tick
-           around its own starting profit so the P/L ALWAYS stays in $20-$40. */
+           around its own starting profit so the P/L ALWAYS stays in $20-$30. */
         setInterval(() => {
             const trades = TX.readTrades();
             let changed = false;
@@ -2168,7 +2208,7 @@
                 // Random step, slight upward bias
                 let np = +(anchor + (Math.random() - 0.48) * swing).toFixed(dec);
 
-                // Clamp so P/L never leaves the $20-$40 band
+                // Clamp so P/L never leaves the $20-$30 band
                 const plLow = TX.priceForPL(t, AI_STARTING_PROFIT.MIN);
                 const plHigh = TX.priceForPL(t, AI_STARTING_PROFIT.MAX);
                 const lo = Math.min(plLow, plHigh);

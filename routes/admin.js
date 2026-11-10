@@ -53,7 +53,6 @@ router.get('/users', verifyAdmin, (req, res) => {
     User.find({}, (err, users) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
 
-        // Hide passwords before sending to frontend
         const sanitizedUsers = users.map(u => {
             const { password, ...rest } = u;
             return rest;
@@ -63,11 +62,10 @@ router.get('/users', verifyAdmin, (req, res) => {
     });
 });
 
-// 2. Fund or update a user's wallet (Real or Demo)
+// 2. Fund or update a user's wallet via Admin
 router.post('/fund-wallet', verifyAdmin, (req, res) => {
-    const { userId, amount, action, walletType } = req.body; // walletType can be 'realBalance' or 'demoBalance'
+    const { userId, amount, action, walletType } = req.body;
     const numAmount = parseFloat(amount);
-    const targetWallet = walletType === 'demoBalance' ? 'wallet.demoBalance' : 'wallet.realBalance';
 
     if (isNaN(numAmount) || numAmount <= 0) {
         return res.status(400).json({ success: false, message: 'Invalid amount' });
@@ -76,28 +74,92 @@ router.post('/fund-wallet', verifyAdmin, (req, res) => {
     User.findOne({ _id: userId }, (err, user) => {
         if (err || !user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        let currentBalance = walletType === 'demoBalance' ? (user.wallet && user.wallet.demoBalance ? user.wallet.demoBalance : 0) : (user.wallet && user.wallet.realBalance ? user.wallet.realBalance : 0);
+        const currentWallet = user.wallet || { realBalance: 0, demoBalance: 10000 };
+        let realBalance = Number(currentWallet.realBalance || 0);
+        let demoBalance = Number(currentWallet.demoBalance !== undefined ? currentWallet.demoBalance : 10000);
 
-        if (action === 'subtract') {
-            currentBalance = Math.max(0, currentBalance - numAmount);
+        if (walletType === 'demoBalance') {
+            demoBalance = action === 'subtract' ? Math.max(0, demoBalance - numAmount) : demoBalance + numAmount;
         } else {
-            currentBalance += numAmount;
+            realBalance = action === 'subtract' ? Math.max(0, realBalance - numAmount) : realBalance + numAmount;
         }
 
-        const updateQuery = {};
-        updateQuery[targetWallet] = currentBalance;
+        const updatedWallet = { realBalance, demoBalance };
 
-        User.update({ _id: userId }, { $set: updateQuery }, {},
-            (err, numUpdated) => {
-                if (err) return res.status(500).json({ success: false, error: err.message });
+        User.update({ _id: userId }, { $set: { wallet: updatedWallet } }, {}, (err, numUpdated) => {
+            if (err) return res.status(500).json({ success: false, error: err.message });
 
-                res.json({
-                    success: true,
-                    message: 'Wallet updated successfully',
-                    newBalance: currentBalance
-                });
+            res.json({
+                success: true,
+                message: 'Wallet updated successfully',
+                wallet: updatedWallet
+            });
+        });
+    });
+});
+
+// 3. Get all users with pending KYC status
+router.get('/kyc-pending', verifyAdmin, (req, res) => {
+    User.find({ kycStatus: 'PENDING' }, (err, users) => {
+        if (err) {
+            return res.status(500).json({ success: false, error: err.message });
+        }
+        const sanitizedUsers = users.map(u => {
+            const { password, ...rest } = u;
+            return rest;
+        });
+        res.json({ success: true, users: sanitizedUsers });
+    });
+});
+
+// 4. Approve or Reject a trader's KYC verification
+router.post('/kyc-action', verifyAdmin, (req, res) => {
+    const { userId, action } = req.body;
+
+    if (!['VERIFIED', 'REJECTED'].includes(action)) {
+        return res.status(400).json({ success: false, message: 'Invalid action status.' });
+    }
+
+    User.update({ _id: userId }, { $set: { kycStatus: action } }, {}, (err, numUpdated) => {
+        if (err || numUpdated === 0) {
+            return res.status(500).json({ success: false, message: 'Failed to update user KYC status.' });
+        }
+        res.json({ success: true, message: `Trader KYC status successfully updated to ${action}` });
+    });
+});
+
+// 5. Allow frontend trade profit/loss syncing directly at /api/admin/wallet/update
+router.post('/wallet/update', (req, res) => {
+    const { userId, accountType, profitAmount } = req.body;
+    const amount = parseFloat(profitAmount);
+
+    if (!userId || isNaN(amount)) {
+        return res.status(400).json({ success: false, message: 'Invalid payload.' });
+    }
+
+    User.findOne({ _id: userId }, (err, user) => {
+        if (err || !user) {
+            return res.status(404).json({ success: false, message: 'User not found.' });
+        }
+
+        const currentWallet = user.wallet || { realBalance: 0, demoBalance: 10000 };
+        let realBalance = Number(currentWallet.realBalance || 0);
+        let demoBalance = Number(currentWallet.demoBalance !== undefined ? currentWallet.demoBalance : 10000);
+
+        if (accountType === 'Real') {
+            realBalance = Math.max(0, realBalance + amount);
+        } else {
+            demoBalance = Math.max(0, demoBalance + amount);
+        }
+
+        const updatedWallet = { realBalance, demoBalance };
+
+        User.update({ _id: userId }, { $set: { wallet: updatedWallet } }, {}, (err, numUpdated) => {
+            if (err || numUpdated === 0) {
+                return res.status(500).json({ success: false, message: 'Failed to update database balance.' });
             }
-        );
+            res.json({ success: true, wallet: updatedWallet });
+        });
     });
 });
 

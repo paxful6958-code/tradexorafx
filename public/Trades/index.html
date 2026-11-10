@@ -263,7 +263,7 @@
 
             <div class="mb-5">
                 <h3 class="text-lg font-extrabold text-gray-900 tracking-tight">AI-powered trade execution</h3>
-                <p class="text-xs text-gray-500 mt-0.5">Fast market scan. Clean entries. Smart risk handling.</p>
+                <p class="text-xs text-gray-500 mt-0.5">Opens with instant profit of $20 – $30. Fast market scan. Smart risk handling.</p>
             </div>
 
             <div class="space-y-4">
@@ -472,11 +472,12 @@
                     closedPL: 0,
                     closedReason: '',
                     closedAt: '',
-                    source: source === 'bot' ? 'bot' : 'manual'
+                    source: source === 'bot' ? 'bot' : 'manual',
+                    startPL: (startPL !== undefined && isFinite(Number(startPL))) ? Number(startPL) : undefined
                 };
-                // AI-executed trades open at a random starting profit ($20 - $40)
-                if (source === 'bot' && Number.isFinite(startPL)) {
-                    t.currentPrice = +TX.priceForPL(t, startPL).toFixed(TX_DECIMALS[t.symbol] || 2);
+                // AI-executed trades open at a random starting profit ($20 - $30)
+                if (source === 'bot' && Number.isFinite(t.startPL)) {
+                    t.currentPrice = +TX.priceForPL(t, t.startPL).toFixed(TX_DECIMALS[t.symbol] || 2);
                 }
                 trades.unshift(t);
                 TX.writeTrades(trades);
@@ -512,9 +513,42 @@
                 t.currentPrice = Number(price);
                 const acc = TX.readAccount();
                 acc.balances[t.account] = (acc.balances[t.account] || 0) + pl;
+
+                // 1. Immediately update UI locally for instant feedback
                 TX.writeTrades(trades);
                 TX.writeAccount(acc);
+
+                // 2. IMMEDIATELY persist to NeDB backend so future polls read
+                //    the NEW balance (profit OR loss, AI OR manual — always synced)
+                TX.syncWalletToServer(t.account, pl);
+
                 return t;
+            },
+            async syncWalletToServer(accountType, profitAmount) {
+                const userId = localStorage.getItem('tradexora_user_id') ||
+                    localStorage.getItem('userId') ||
+                    getCurrentUserId();
+                if (!userId) {
+                    console.warn('syncWalletToServer: no userId found, skipping server sync.');
+                    return;
+                }
+                try {
+                    const res = await fetch('/api/admin/wallet/update', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            userId: userId,
+                            accountType: accountType, // 'Real' or 'Demo'
+                            profitAmount: profitAmount // signed: +profit / -loss
+                        })
+                    });
+                    if (!res.ok) throw new Error('Wallet sync HTTP ' + res.status);
+                    console.log('Wallet balance persisted to database successfully.');
+                } catch (err) {
+                    console.error('Failed to persist balance to server:', err);
+                }
             },
             resetDemoBalance() {
                 const acc = TX.readAccount();
@@ -541,9 +575,9 @@
             RISK_LOT: 0.10
         };
 
-        // AI trades: random starting profit range + fast oscillation settings
+        // AI trades: random starting profit range ($20-$30) + fast oscillation
         const AI_START_PL_MIN = 20;
-        const AI_START_PL_MAX = 40;
+        const AI_START_PL_MAX = 30;
         const OSC_TICK_MS = 700; // faster tick
         const OSC_STRENGTH = 0.35; // jitter in $ of P/L per tick (value-based, not price-%-based)
 
@@ -643,17 +677,22 @@
             return (Number(n) || 0).toFixed(SYMBOL_DECIMALS[sym] !== undefined ? SYMBOL_DECIMALS[sym] : 2);
         }
 
-        function closeTradeById(id, reason) {
+        // Close a trade and AWAIT the backend wallet sync (profit or loss)
+        // before refreshing the UI. Works for AI (bot) and manual trades.
+        async function closeTradeById(id, reason) {
             const trade = TX.closeTrade(id, reason || 'Manual close');
             if (!trade) return null;
+            if (TX.syncWalletToServer) {
+                await TX.syncWalletToServer(trade.account, trade.closedPL);
+            }
             loadState();
             if (openManagingId === id) openManagingId = null;
             showToast(`${trade.symbol} closed ${reason || ''} (${trade.closedPL >= 0 ? '+' : '-'}$${Math.abs(trade.closedPL).toFixed(2)})`);
             return trade;
         }
 
-        function closeTrade(id) {
-            if (closeTradeById(id, 'Manual close')) renderTrades();
+        async function closeTrade(id) {
+            if (await closeTradeById(id, 'Manual close')) renderTrades();
         }
 
         function toggleManage(id) {
@@ -905,7 +944,7 @@
                 const freeMargin = (accountBalances[activeAccount] || 0) - openMarginUsedFor(activeAccount);
                 if (margin > freeMargin) continue;
 
-                // AI trade opens at a random starting profit between $20 and $40
+                // AI trade opens at a random starting profit between $20 and $30
                 TX.openTrade({
                     symbol: sym,
                     type: sig.type,
@@ -997,7 +1036,7 @@
                 return;
             }
 
-            // Random starting profit between $20 and $40, oscillating fast
+            // Random starting profit between $20 and $30, oscillating fast
             const startPL = randomStartPL();
             TX.openTrade({
                 symbol: pair,
@@ -1018,7 +1057,7 @@
         // ---------- FAST OSCILLATION ENGINE ----------
         // Jitters the P/L VALUE directly (not the raw price) so the swing
         // size is identical on every symbol, and clamps it back into the
-        // $20-$40 band. The price is then derived from the target P/L via
+        // $20-$30 band. The price is then derived from the target P/L via
         // TX.priceForPL, so TradesChart stays consistent.
         setInterval(() => {
             const trades = TX.readTrades();
@@ -1027,7 +1066,7 @@
             trades.forEach(t => {
                 if (t.status !== 'open') return;
 
-                const midPL = AI_START_PL_MIN + (AI_START_PL_MAX - AI_START_PL_MIN) / 2; // $30
+                const midPL = AI_START_PL_MIN + (AI_START_PL_MAX - AI_START_PL_MIN) / 2; // $25
                 let pl = getTradePL(t);
 
                 // If P/L drifted outside the band (e.g. real price feed moved

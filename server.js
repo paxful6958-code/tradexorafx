@@ -11,6 +11,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ---- Serve static files ----
+// Serves static files in /public (including /uploads for KYC documents)
 app.use(express.static(path.join(__dirname, "public")));
 
 // ---- API Routes ----
@@ -40,8 +41,18 @@ app.get("/admin-login", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "admin-login.html"));
 });
 
+// Explicit route for More section if needed
+app.get("/More", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "More", "index.html"));
+});
+
+// ---- Fallback 404 Handler ----
+app.use((req, res) => {
+    res.status(404).json({ success: false, message: `Route ${req.originalUrl} not found.` });
+});
+
 // ---- Start Server ----
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT} (Using Local NeDB Database)`);
 });
