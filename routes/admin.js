@@ -3,6 +3,14 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
 
+// Helper to strip sensitive fields from NeDB documents
+const sanitizeUser = (user) => {
+    // Convert NeDB document to standard JS object if it's a Mongoose-like doc (though NeDB returns plain objects)
+    const obj = typeof user.toObject === 'function' ? user.toObject() : { ...user };
+    delete obj.password;
+    return obj;
+};
+
 // 0. Admin Login Route
 router.post('/login', (req, res) => {
     const { email, password } = req.body;
@@ -53,11 +61,7 @@ router.get('/users', verifyAdmin, (req, res) => {
     User.find({}, (err, users) => {
         if (err) return res.status(500).json({ success: false, error: err.message });
 
-        const sanitizedUsers = users.map(u => {
-            const { password, ...rest } = u;
-            return rest;
-        });
-
+        const sanitizedUsers = users.map(u => sanitizeUser(u));
         res.json({ success: true, users: sanitizedUsers });
     });
 });
@@ -104,10 +108,7 @@ router.get('/kyc-pending', verifyAdmin, (req, res) => {
         if (err) {
             return res.status(500).json({ success: false, error: err.message });
         }
-        const sanitizedUsers = users.map(u => {
-            const { password, ...rest } = u;
-            return rest;
-        });
+        const sanitizedUsers = users.map(u => sanitizeUser(u));
         res.json({ success: true, users: sanitizedUsers });
     });
 });
